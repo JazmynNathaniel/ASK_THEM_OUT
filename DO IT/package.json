@@ -1,0 +1,13 @@
+{
+  "name": "ask-that-boy",
+  "private": true,
+  "version": "1.0.0",
+  "description": "A dramatic little love note. Ask that boy if he likes you.",
+  "type": "module",
+  "scripts": {
+    "test": "node test/logic.test.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
