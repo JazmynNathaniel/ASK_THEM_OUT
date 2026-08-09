@@ -4,11 +4,6 @@
 // just logs the email to the console and reports emailed:false, so the app runs
 // end-to-end locally and you can see exactly what would have been sent.
 
-const RESEND_API_KEY = process.env.RESEND_API_KEY;
-// Resend's shared onboarding sender works out of the box but can only deliver
-// to your own address. Point MAIL_FROM at a verified domain to email anyone.
-const MAIL_FROM = process.env.MAIL_FROM || 'Sky Notes <onboarding@resend.dev>';
-
 const ANSWER_COPY = {
   yes: { emoji: '💗', line: 'said YES.', vibe: 'Go be unbearably cute about it.' },
   no: { emoji: '🥀', line: 'said no.', vibe: 'Respectfully devastating. You have excellent taste regardless.' },
@@ -58,10 +53,15 @@ function escapeHtml(value = '') {
 
 const escapeAttr = escapeHtml;
 
-async function sendAnswerEmail(to, details) {
+export async function sendAnswerEmail(to, details) {
   const { subject, text, html } = renderEmail(details);
+  // Read at call time (not import time) so a .env file loaded at boot counts.
+  const apiKey = process.env.RESEND_API_KEY;
+  // Resend's shared onboarding sender works out of the box but can only deliver
+  // to your own address. Point MAIL_FROM at a verified domain to email anyone.
+  const from = process.env.MAIL_FROM || 'Sky Notes <onboarding@resend.dev>';
 
-  if (!RESEND_API_KEY) {
+  if (!apiKey) {
     console.log('\n[email fallback] would send to:', to);
     console.log('[email fallback] subject:', subject);
     console.log('[email fallback] body:\n' + text + '\n');
@@ -71,10 +71,10 @@ async function sendAnswerEmail(to, details) {
   const response = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${RESEND_API_KEY}`,
+      Authorization: `Bearer ${apiKey}`,
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({ from: MAIL_FROM, to, subject, text, html })
+    body: JSON.stringify({ from, to, subject, text, html })
   });
 
   if (!response.ok) {
@@ -85,5 +85,3 @@ async function sendAnswerEmail(to, details) {
 
   return { emailed: true };
 }
-
-module.exports = { sendAnswerEmail };

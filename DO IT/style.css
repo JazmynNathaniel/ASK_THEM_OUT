@@ -225,6 +225,35 @@ button {
   left: 9px;
 }
 
+.name-field {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 0 0 18px;
+  color: var(--muted);
+  font-family: "Segoe Print", "Bradley Hand ITC", "Comic Sans MS", cursive;
+  font-size: 1.18rem;
+}
+
+.name-field input {
+  width: min(16ch, 60%);
+  padding: 2px 6px;
+  border: 0;
+  border-bottom: 2px dashed rgba(255, 92, 138, 0.45);
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+}
+
+.name-field input:focus-visible {
+  outline: none;
+  border-bottom-color: var(--pink);
+}
+
+.name-field input[readonly] {
+  border-bottom-style: solid;
+}
+
 .eyebrow {
   margin: 0 0 12px;
   color: var(--coral);
@@ -450,6 +479,7 @@ h1 {
   border-radius: 8px;
   background: rgba(255, 252, 244, 0.56);
   box-shadow: 0 20px 50px rgba(24, 72, 96, 0.16);
+  -webkit-backdrop-filter: blur(14px);
   backdrop-filter: blur(14px);
   transform: translate3d(calc(var(--look-x) * -0.08), calc(var(--look-y) * 0.06), 0) rotate(0.8deg);
 }
@@ -521,6 +551,73 @@ h1 {
   color: var(--muted);
   font-size: 0.84rem;
   line-height: 1.35;
+}
+
+.send-panel {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px dashed rgba(23, 49, 73, 0.18);
+}
+
+.send-hint {
+  margin: 0 0 10px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.send-panel form,
+.send-result {
+  display: grid;
+  gap: 8px;
+}
+
+.send-panel input,
+.send-result input {
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.8);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.88rem;
+}
+
+.send-panel input:focus-visible,
+.send-result input:focus-visible {
+  outline: 3px solid rgba(124, 108, 255, 0.42);
+  outline-offset: 2px;
+}
+
+.send-button {
+  border: 0;
+  border-radius: 999px;
+  padding: 10px 14px;
+  background: var(--pink);
+  color: white;
+  font-size: 0.88rem;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 10px 18px rgba(255, 92, 138, 0.34);
+  transition: transform 160ms ease, box-shadow 160ms ease, opacity 160ms ease;
+}
+
+.send-button:hover:not(:disabled),
+.send-button:focus-visible {
+  outline: none;
+  transform: translateY(-2px);
+  box-shadow: 0 14px 22px rgba(255, 92, 138, 0.42);
+}
+
+.send-button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.send-result p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.84rem;
 }
 
 .doodles {

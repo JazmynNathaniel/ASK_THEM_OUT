@@ -1,21 +1,28 @@
 // Tiny storage layer for love notes.
 //
-// In production (on Vercel) it uses Upstash Redis over its REST API — set
+// In production it uses Upstash Redis over its REST API — set
 // KV_REST_API_URL + KV_REST_API_TOKEN (Vercel's Upstash integration injects
 // these automatically). With no env vars set, it falls back to a local JSON
 // file so the whole app runs on your laptop with zero setup.
 
-const fs = require('fs');
-const path = require('path');
-const os = require('os');
-
-const REST_URL = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
-const REST_TOKEN = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
-const useRedis = Boolean(REST_URL && REST_TOKEN);
+import fs from 'node:fs';
+import path from 'node:path';
+import os from 'node:os';
 
 // --- local file fallback -------------------------------------------------
-// Vercel functions can only write to /tmp, so we keep the dev file there too.
+// Serverless platforms can only write to /tmp, so the dev file lives there too.
 const LOCAL_FILE = path.join(os.tmpdir(), 'love-notes.json');
+
+// Read at call time (not import time) so a .env file loaded at boot counts.
+function redisConfig() {
+  const url = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+  return url && token ? { url, token } : null;
+}
+
+export function backend() {
+  return redisConfig() ? 'redis' : 'local-file';
+}
 
 function readLocal() {
   try {
@@ -31,10 +38,11 @@ function writeLocal(data) {
 
 // --- Upstash REST helper -------------------------------------------------
 async function redis(command) {
-  const response = await fetch(REST_URL, {
+  const { url, token } = redisConfig();
+  const response = await fetch(url, {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${REST_TOKEN}`,
+      Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json'
     },
     body: JSON.stringify(command)
@@ -49,8 +57,8 @@ async function redis(command) {
 }
 
 // --- public API ----------------------------------------------------------
-async function getNote(id) {
-  if (useRedis) {
+export async function getNote(id) {
+  if (redisConfig()) {
     const raw = await redis(['GET', `note:${id}`]);
     return raw ? JSON.parse(raw) : null;
   }
@@ -58,8 +66,8 @@ async function getNote(id) {
   return readLocal()[id] || null;
 }
 
-async function putNote(id, note) {
-  if (useRedis) {
+export async function putNote(id, note) {
+  if (redisConfig()) {
     // keep notes for 60 days, then let them fade away
     await redis(['SET', `note:${id}`, JSON.stringify(note), 'EX', 60 * 60 * 24 * 60]);
     return;
@@ -69,5 +77,3 @@ async function putNote(id, note) {
   data[id] = note;
   writeLocal(data);
 }
-
-module.exports = { getNote, putNote, backend: useRedis ? 'redis' : 'local-file' };

@@ -16,3 +16,7 @@ export const burstLayer = document.getElementById('burstLayer');
 export const secretHeart = document.getElementById('secretHeart');
 export const nameInput = document.getElementById('nameInput');
 export const eyebrow = document.querySelector('.eyebrow');
+export const sendPanel = document.getElementById('sendPanel');
+export const sendForm = document.getElementById('sendForm');
+export const senderEmail = document.getElementById('senderEmail');
+export const sendResult = document.getElementById('sendResult');

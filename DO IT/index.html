@@ -61,6 +61,16 @@
         <div id="warning" class="warning" hidden></div>
         <p class="side-title">note trail</p>
         <ol id="trail"></ol>
+
+        <div id="sendPanel" class="send-panel">
+          <p class="side-title">make it real</p>
+          <p class="send-hint">Write their name on the note, leave your email here, and send them the link — you get a message the moment they answer.</p>
+          <form id="sendForm">
+            <input id="senderEmail" type="email" required maxlength="254" placeholder="your email…" autocomplete="email" spellcheck="false" />
+            <button type="submit" class="send-button">✉️ pass this note for real</button>
+          </form>
+          <div id="sendResult" class="send-result" hidden></div>
+        </div>
       </aside>
     </section>
 
