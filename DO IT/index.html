@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Do You Like Me?</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <svg class="cloud-svg" viewBox="0 0 1200 400" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <g class="cloud-layer" data-speed="0.12" fill="white" opacity="0.95">
+      <path d="M1200 220c0 0-60-40-140-22-48-56-134-32-170 6-28-26-86-24-110 6-40-48-126-18-160 10-34-28-110-30-150-6-52-34-150-14-200 16v140h1030V220z"/>
+    </g>
+    <g class="cloud-layer" data-speed="0.08" fill="white" opacity="0.9">
+      <path d="M0 260c0 0 46-44 126-28 46-40 124-24 156 4 34-34 98-28 132 2 30-36 96-22 126 8 28-30 96-22 128 6 44-40 134-16 176 14v84H0v-86z"/>
+    </g>
+    <g class="cloud-layer" data-speed="0.2" fill="white" opacity="0.98">
+      <path d="M300 80c40-36 110-24 148 4 28-34 86-28 118 2 26-32 78-26 100 4 22-28 72-18 98 6 26-24 82-12 108 10v60H300V80z"/>
+    </g>
+  </svg>
+
+  <main class="love-note-app" data-mood="soft">
+    <section class="note-board" aria-label="secret note conversation">
+      <article id="note" class="note">
+        <div class="paper-fold top-fold" aria-hidden="true"></div>
+        <div class="paper-fold corner-fold" aria-hidden="true"></div>
+        <button id="secretHeart" class="secret-heart" type="button" aria-label="tiny secret heart"><span></span></button>
+
+        <p class="eyebrow">secret sky note</p>
+        <h1 id="title">Do you like me?</h1>
+
+        <label class="name-field">
+          <span>to:</span>
+          <input id="nameInput" type="text" maxlength="18" placeholder="write a name…" autocomplete="off" spellcheck="false" />
+        </label>
+
+        <div id="message" class="message" aria-live="polite"></div>
+        <p id="aside" class="aside">The note is pretending this is casual.</p>
+
+        <div class="meter-row" aria-label="current emotional status">
+          <div class="meter">
+            <div class="meter-label">
+              <span>blush meter</span>
+              <strong id="blushText">warming up</strong>
+            </div>
+            <div class="meter-track blush"><span id="blushFill"></span></div>
+          </div>
+          <div class="meter">
+            <div class="meter-label">
+              <span>delusion index</span>
+              <strong id="chaosText">plausible</strong>
+            </div>
+            <div class="meter-track chaos"><span id="chaosFill"></span></div>
+          </div>
+        </div>
+
+        <div id="choices" class="choices" aria-label="choose a reply"></div>
+      </article>
+
+      <aside class="side-notes" aria-label="tiny note history">
+        <div id="warning" class="warning" hidden></div>
+        <p class="side-title">note trail</p>
+        <ol id="trail"></ol>
+      </aside>
+    </section>
+
+    <div class="doodles" aria-hidden="true">
+      <span class="doodle d1">yes?</span>
+      <span class="doodle d2">interesting</span>
+      <span class="doodle d3">hypothetically...</span>
+      <span class="doodle d4">be normal</span>
+      <span class="doodle d5">failed</span>
+    </div>
+
+    <div id="burstLayer" class="burst-layer" aria-hidden="true"></div>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
