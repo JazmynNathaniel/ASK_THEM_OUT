@@ -27,7 +27,39 @@ Open http://localhost:3000. No dependencies, nothing to install (Node 18+).
 
 The crush-facing API never exposes your email address.
 
-## Configuration (all optional)
+## Deploy (Vercel)
+
+The `api/` folder holds serverless versions of the same routes `server.js`
+serves locally; both call `lib/notes.js`. There is no build step.
+
+One-time setup, from the `DO IT` folder:
+
+```
+npx vercel login
+npx vercel link          # create/link the Vercel project
+```
+
+Storage is effectively **required** in production (a function's temp files
+evaporate between requests): add Upstash Redis from the Vercel dashboard
+(Storage → Upstash, injects the env vars automatically) or set them yourself:
+
+```
+npx vercel env add KV_REST_API_URL
+npx vercel env add KV_REST_API_TOKEN
+npx vercel env add RESEND_API_KEY      # optional — otherwise emails land in function logs
+```
+
+Deploy:
+
+```
+npx vercel               # preview deployment (unique URL)
+npx vercel --prod        # production
+```
+
+Alternative: import the GitHub repo at vercel.com, set **Root Directory** to
+`DO IT`, and every `git push` deploys automatically.
+
+## Configuration (all optional locally)
 
 Set as environment variables or in a `.env` file next to `server.js`
 (git-ignored):
@@ -50,7 +82,9 @@ js/                     browser code (ES modules)
   ui.js, effects.js, sound.js
   notes.js              client for the note API
   main.js               wiring + boot
-server.js               zero-dependency static + API server
+server.js               zero-dependency static + API server (local dev)
+api/                    the same routes as Vercel serverless functions
+lib/notes.js            shared note operations (validation, email policy)
 lib/store.js            note storage (Upstash Redis or local JSON)
 lib/email.js            answer emails (Resend or console fallback)
 test/logic.test.js      npm test

@@ -1,19 +1,19 @@
-// Zero-dependency server: static files + the note API.
+// Zero-dependency local dev server: static files + the note API.
 //
 //   node server.js   →  http://localhost:3000
 //
-// All configuration is optional (see README.md): PORT, RESEND_API_KEY,
-// MAIL_FROM, KV_REST_API_URL, KV_REST_API_TOKEN. A .env file next to this
-// file is loaded automatically at boot.
+// In production the same routes are served by the Vercel functions in api/;
+// both call the shared logic in lib/notes.js. All configuration is optional
+// (see README.md): PORT, RESEND_API_KEY, MAIL_FROM, KV_REST_API_URL,
+// KV_REST_API_TOKEN. A .env file next to this file is loaded at boot.
 
 import http from 'node:http';
-import crypto from 'node:crypto';
 import path from 'node:path';
 import { readFile } from 'node:fs/promises';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { getNote, putNote, backend } from './lib/store.js';
-import { sendAnswerEmail } from './lib/email.js';
+import { createNote, readNote, answerNote, NoteError } from './lib/notes.js';
+import { backend } from './lib/store.js';
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 
@@ -49,7 +49,7 @@ const MIME = {
 };
 
 // Server-side code and config never leave the building.
-const PRIVATE = ['server.js', 'package.json', 'lib', 'test'];
+const PRIVATE = ['server.js', 'package.json', 'api', 'lib', 'test'];
 
 async function serveStatic(res, urlPath) {
   const relative = urlPath === '/' ? 'index.html' : decodeURIComponent(urlPath.slice(1));
@@ -83,79 +83,12 @@ async function readJsonBody(req) {
     if (size > 16_384) throw Object.assign(new Error('body too large'), { status: 413 });
     chunks.push(chunk);
   }
-  return JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}');
-}
 
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const ANSWER_TYPES = new Set(['yes', 'no', 'maybe', 'soft-yes', 'flirt', 'crush']);
-
-// --- API --------------------------------------------------------------------
-async function createNote(req, res) {
-  const body = await readJsonBody(req).catch(() => null);
-  if (!body) return sendJson(res, 400, { error: 'invalid JSON' });
-
-  const crushName = String(body.crushName || '').trim().slice(0, 18);
-  const senderName = String(body.senderName || '').trim().slice(0, 40);
-  const senderEmail = String(body.senderEmail || '').trim().toLowerCase();
-
-  if (!crushName) return sendJson(res, 400, { error: 'write a name on the note first' });
-  if (!EMAIL_PATTERN.test(senderEmail) || senderEmail.length > 254) {
-    return sendJson(res, 400, { error: 'that email looks fake, and not in a cute way' });
+  try {
+    return JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}');
+  } catch {
+    throw Object.assign(new Error('invalid JSON'), { status: 400 });
   }
-
-  const id = crypto.randomBytes(6).toString('base64url');
-  await putNote(id, {
-    id,
-    crushName,
-    senderName: senderName || null,
-    senderEmail,
-    createdAt: new Date().toISOString(),
-    answers: []
-  });
-
-  console.log(`[notes] created ${id} for "${crushName}" (storage: ${backend()})`);
-  sendJson(res, 201, { id, link: `/?note=${id}` });
-}
-
-// The crush-facing read: never expose the sender's email.
-async function readNote(res, id) {
-  const note = await getNote(id);
-  if (!note) return sendJson(res, 404, { error: 'this note has faded away' });
-  sendJson(res, 200, { id: note.id, crushName: note.crushName, senderName: note.senderName });
-}
-
-async function answerNote(req, res, id) {
-  const body = await readJsonBody(req).catch(() => null);
-  if (!body) return sendJson(res, 400, { error: 'invalid JSON' });
-
-  const answer = String(body.answer || '');
-  const detail = String(body.detail || '').slice(0, 300);
-  if (!ANSWER_TYPES.has(answer)) return sendJson(res, 400, { error: 'the note does not recognize that answer' });
-
-  const note = await getNote(id);
-  if (!note) return sendJson(res, 404, { error: 'this note has faded away' });
-
-  // Email once per kind of answer — a maybe that later becomes a confessed
-  // crush is exactly the update the sender wants, but replays stay silent.
-  const firstOfItsKind = !note.answers.some((a) => a.answer === answer);
-  note.answers = note.answers.concat({ answer, detail, at: new Date().toISOString() }).slice(-50);
-  await putNote(id, note);
-
-  let emailed = false;
-  if (firstOfItsKind) {
-    const proto = req.headers['x-forwarded-proto'] || 'http';
-    const host = req.headers['x-forwarded-host'] || req.headers.host || `localhost:${PORT}`;
-    const outcome = await sendAnswerEmail(note.senderEmail, {
-      senderName: note.senderName,
-      crushName: note.crushName,
-      answer,
-      detail,
-      link: `${proto}://${host}/?note=${id}`
-    });
-    emailed = outcome.emailed;
-  }
-
-  sendJson(res, 200, { ok: true, emailed });
 }
 
 // --- routing ------------------------------------------------------------------
@@ -163,20 +96,29 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
 
   try {
-    if (req.method === 'POST' && url.pathname === '/api/notes') return await createNote(req, res);
+    if (req.method === 'POST' && url.pathname === '/api/notes') {
+      return sendJson(res, 201, await createNote(await readJsonBody(req)));
+    }
 
     const answerMatch = url.pathname.match(/^\/api\/notes\/([A-Za-z0-9_-]{1,32})\/answer$/);
-    if (req.method === 'POST' && answerMatch) return await answerNote(req, res, answerMatch[1]);
+    if (req.method === 'POST' && answerMatch) {
+      const proto = req.headers['x-forwarded-proto'] || 'http';
+      const host = req.headers['x-forwarded-host'] || req.headers.host || `localhost:${PORT}`;
+      return sendJson(res, 200, await answerNote(answerMatch[1], await readJsonBody(req), `${proto}://${host}`));
+    }
 
     const noteMatch = url.pathname.match(/^\/api\/notes\/([A-Za-z0-9_-]{1,32})$/);
-    if (req.method === 'GET' && noteMatch) return await readNote(res, noteMatch[1]);
+    if (req.method === 'GET' && noteMatch) {
+      return sendJson(res, 200, await readNote(noteMatch[1]));
+    }
 
     if (url.pathname.startsWith('/api/')) return sendJson(res, 404, { error: 'not found' });
     if (req.method !== 'GET' && req.method !== 'HEAD') return sendJson(res, 405, { error: 'method not allowed' });
     return await serveStatic(res, url.pathname);
   } catch (error) {
-    console.error('[server]', error);
-    sendJson(res, error.status || 500, { error: 'something dramatic went wrong' });
+    const status = (error instanceof NoteError && error.status) || error.status || 500;
+    if (status >= 500) console.error('[server]', error);
+    sendJson(res, status, { error: status >= 500 ? 'something dramatic went wrong' : error.message });
   }
 });
 
