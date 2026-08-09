@@ -32,7 +32,7 @@ The crush-facing API never exposes your email address.
 The `api/` folder holds serverless versions of the same routes `server.js`
 serves locally; both call `lib/notes.js`. There is no build step.
 
-One-time setup, from the `DO IT` folder:
+One-time setup, from the repo root:
 
 ```
 npx vercel login
@@ -56,8 +56,9 @@ npx vercel               # preview deployment (unique URL)
 npx vercel --prod        # production
 ```
 
-Alternative: import the GitHub repo at vercel.com, set **Root Directory** to
-`DO IT`, and every `git push` deploys automatically.
+Alternative: import the GitHub repo at vercel.com (leave **Root Directory**
+at the default — the app lives at the repo root) and every `git push`
+deploys automatically.
 
 ## Configuration (all optional locally)
 
